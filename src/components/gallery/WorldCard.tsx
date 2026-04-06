@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 interface WorldCardProps {
   id: string; title: string; artist: string; thumbnailUrl: string | null; createdAt: string;
@@ -10,7 +11,7 @@ export function WorldCard({ id, title, artist, thumbnailUrl, createdAt }: WorldC
       <div className="group bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-purple-600 transition-colors">
         <div className="aspect-video bg-gray-800 relative overflow-hidden">
           {thumbnailUrl ? (
-            <img src={thumbnailUrl} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            <Image src={thumbnailUrl} alt={title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-600">
               <span className="text-4xl">🌍</span>

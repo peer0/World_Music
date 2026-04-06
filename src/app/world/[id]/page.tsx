@@ -21,7 +21,7 @@ export default function WorldPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [progress, setProgress] = useState(0);
-  const [playerState, setPlayerState] = useState<PlayerState>("loading");
+  const [, setPlayerState] = useState<PlayerState>("loading");
   const [mode, setMode] = useState<"guided" | "free">("guided");
   const [showUI, setShowUI] = useState(true);
 
