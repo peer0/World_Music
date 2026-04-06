@@ -3,6 +3,8 @@
 > Chronological action log. Hooks and AI append to this file automatically.
 > Old sessions are consolidated by the daemon weekly.
 
+| 00:54 | Task 5: Camera Timeline Interpolation Hook — TDD implementation | src/hooks/useCameraTimeline.ts, src/__tests__/hooks/useCameraTimeline.test.ts | 5/5 tests pass | ~900 tok |
+
 ## Session: 2026-04-06 20:18
 
 | Time | Action | File(s) | Outcome | ~Tokens |
@@ -55,3 +57,15 @@
 | 00:36 | Session end: 27 writes across 23 files (01-medium.html, 01-medium-v2.html, waiting.html, 02-visual-style.html, waiting-2.html) | 7 reads | ~31153 tok |
 | 00:36 | Edited .gitignore | 1→4 lines | ~16 |
 | 00:39 | Edited .gitignore | expanded (+10 lines) | ~36 |
+| 00:41 | Created src/__tests__/lib/types.test.ts | — | ~660 |
+| 00:42 | Created src/lib/types.ts | — | ~658 |
+| 00:43 | Task 2: TDD WorldConfig types — wrote test (red), implemented parser (green), committed | src/lib/types.ts, src/__tests__/lib/types.test.ts | 3/3 tests pass | ~650 |
+| 00:44 | Created src/__tests__/lib/interpret-letter.test.ts | — | ~810 |
+| 00:46 | Created src/lib/ai/prompts.ts | — | ~843 |
+| 00:46 | Created src/lib/ai/interpret-letter.ts | — | ~245 |
+| 00:47 | Task 3 AI Pipeline: created prompts.ts, interpret-letter.ts, interpret-letter.test.ts; all tests pass | src/lib/ai/, src/__tests__/lib/interpret-letter.test.ts | committed feat/mvp-implementation | ~700 |
+| 00:48 | Created src/__tests__/lib/generate-skybox.test.ts | — | ~346 |
+| 00:51 | Created src/lib/skybox/generate-skybox.ts | — | ~392 |
+| 00:51 | Task 4 Skybox Service: TDD — test (red), implemented Blockade Labs polling service (green), committed | src/lib/skybox/generate-skybox.ts, src/__tests__/lib/generate-skybox.test.ts | 2/2 tests pass | ~390 |
+| 00:53 | Created src/__tests__/hooks/useCameraTimeline.test.ts | — | ~469 |
+| 00:53 | Created src/hooks/useCameraTimeline.ts | — | ~395 |
