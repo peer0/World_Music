@@ -1,1 +1,14 @@
+# dependencies
+node_modules/
+.next/
+
+# env
+.env
+.env.local
+
+# prisma
+prisma/dev.db
+prisma/dev.db-journal
+
+# superpowers
 .superpowers/

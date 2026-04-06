@@ -16,6 +16,22 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-06T14:53:21.510Z"
+    },
+    {
+      "id": "bug-002",
+      "timestamp": "2026-04-06T15:35:34.287Z",
+      "error_message": "Incorrect value in code",
+      "file": "package.json",
+      "root_cause": "Had \"15.3.0\"",
+      "fix": "Changed to \"15.3.9\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "json"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-06T15:35:36.783Z"
     }
   ]
 }
