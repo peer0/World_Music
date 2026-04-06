@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "bugs": [
+    {
+      "id": "bug-001",
+      "timestamp": "2026-04-06T14:53:21.510Z",
+      "error_message": "Incorrect value in code",
+      "file": "docs/superpowers/specs/2026-04-06-world-music-design.md",
+      "root_cause": "Had \"calm_sea\"",
+      "fix": "Changed to \"string (자유 텍스트 — AI가 terrain type에 맞는 구체적 변형을 기술)",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-06T14:53:21.510Z"
+    }
+  ]
+}
