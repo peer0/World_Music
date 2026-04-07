@@ -2,57 +2,67 @@ import Anthropic from "@anthropic-ai/sdk";
 import { parseWorldConfig, type WorldConfig } from "@/lib/types";
 import { LETTER_INTERPRETATION_PROMPT } from "./prompts";
 
+const REPLICATE_API_BASE = "https://api.replicate.com/v1";
+
 interface LetterInput {
   letter: string;
   songTitle: string;
   artist: string;
 }
 
-const OLLAMA_BASE = "http://localhost:11434";
-const OLLAMA_MODEL = "gemma4:e4b";
+async function interpretWithReplicate(input: LetterInput): Promise<WorldConfig> {
+  const apiToken = process.env.REPLICATE_API_TOKEN;
+  if (!apiToken) throw new Error("No REPLICATE_API_TOKEN");
 
-async function isOllamaRunning(): Promise<boolean> {
-  try {
-    const res = await fetch(`${OLLAMA_BASE}/api/tags`, {
-      signal: AbortSignal.timeout(2000),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
-async function interpretWithOllama(input: LetterInput): Promise<WorldConfig> {
   const userMessage = `Song: "${input.songTitle}" by ${input.artist}\n\nLetter:\n${input.letter}`;
 
-  const res = await fetch(`${OLLAMA_BASE}/api/chat`, {
+  // Use Replicate's serverless API with meta/llama model
+  const res = await fetch(`${REPLICATE_API_BASE}/models/meta/meta-llama-3-8b-instruct/predictions`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      Authorization: `Bearer ${apiToken}`,
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
-      model: OLLAMA_MODEL,
-      messages: [
-        { role: "system", content: LETTER_INTERPRETATION_PROMPT },
-        { role: "user", content: userMessage },
-      ],
-      stream: false,
-      options: { temperature: 0.7 },
+      input: {
+        prompt: userMessage,
+        system_prompt: LETTER_INTERPRETATION_PROMPT,
+        max_tokens: 4096,
+        temperature: 0.7,
+      },
     }),
   });
 
   if (!res.ok) {
-    throw new Error(`Ollama API error: ${res.status}`);
+    const err = await res.json().catch(() => ({}));
+    throw new Error(`Replicate LLM error: ${res.status} ${JSON.stringify(err)}`);
   }
 
-  const data = await res.json();
-  const text = data.message?.content;
-  if (!text) {
-    throw new Error("Empty response from Ollama");
+  const prediction = await res.json();
+
+  // Poll for completion
+  let result = prediction;
+  while (result.status !== "succeeded" && result.status !== "failed") {
+    await new Promise((r) => setTimeout(r, 2000));
+    const pollRes = await fetch(`${REPLICATE_API_BASE}/predictions/${result.id}`, {
+      headers: { Authorization: `Bearer ${apiToken}` },
+    });
+    if (!pollRes.ok) throw new Error(`Replicate poll error: ${pollRes.status}`);
+    result = await pollRes.json();
   }
 
-  // Extract JSON from response (model might wrap it in markdown code blocks)
+  if (result.status === "failed") {
+    throw new Error(`Replicate prediction failed: ${result.error || "unknown"}`);
+  }
+
+  // Output is an array of string tokens — join them
+  const text = Array.isArray(result.output) ? result.output.join("") : result.output;
+  if (!text) throw new Error("Empty response from Replicate LLM");
+
+  // Extract JSON from response
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    throw new Error("No JSON found in Ollama response");
+    throw new Error("No JSON found in Replicate LLM response");
   }
 
   return parseWorldConfig(jsonMatch[0]);
@@ -75,11 +85,11 @@ function generateMockWorldConfig(input: LetterInput): WorldConfig {
       mood: {
         primary_emotion: "quiet wonder",
         intensity: 0.6,
-        description: `"${input.songTitle}" by ${input.artist} — fallback world (Ollama not available)`,
+        description: `"${input.songTitle}" by ${input.artist} — fallback world`,
       },
     },
     scene_image: {
-      scene_description: `A dreamlike twilight landscape for "${input.songTitle}" by ${input.artist}. Gentle fog drifts over rolling hills under a gradient sky shifting from deep purple to warm amber.`,
+      scene_description: `A dreamlike twilight landscape for "${input.songTitle}" by ${input.artist}.`,
       style: "dreamlike",
       panorama_prompt: "360 degree equirectangular panorama photograph, dreamlike twilight landscape, gentle fog drifting over rolling hills, gradient sky from deep purple to warm amber, scattered fireflies glowing softly, silhouettes of ancient trees on the horizon, ethereal and peaceful atmosphere, cinematic lighting",
       depth_layers: ["distant purple mountains and gradient sky", "rolling hills with scattered trees", "misty foreground with glowing fireflies"],
@@ -113,13 +123,14 @@ export async function interpretLetter(input: LetterInput): Promise<WorldConfig> 
     return parseWorldConfig(text.text);
   }
 
-  // Priority 2: Ollama (local LLM)
-  if (await isOllamaRunning()) {
-    console.log("Using Ollama (local LLM) for letter interpretation");
+  // Priority 2: Replicate LLM (remote, no local memory)
+  const replicateToken = process.env.REPLICATE_API_TOKEN;
+  if (replicateToken) {
+    console.log("Using Replicate LLM (remote) for letter interpretation");
     try {
-      return await interpretWithOllama(input);
+      return await interpretWithReplicate(input);
     } catch (err) {
-      console.error("Ollama interpretation failed, falling back to mock:", err);
+      console.error("Replicate LLM failed, falling back to mock:", err);
     }
   }
 
