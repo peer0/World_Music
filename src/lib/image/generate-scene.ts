@@ -1,70 +1,37 @@
-const REPLICATE_API_BASE = "https://api.replicate.com/v1";
-
-async function pollReplicatePrediction(
-  id: string,
-  apiToken: string,
-  maxAttempts = 60,
-  intervalMs = 3000
-): Promise<string> {
-  for (let i = 0; i < maxAttempts; i++) {
-    const res = await fetch(`${REPLICATE_API_BASE}/predictions/${id}`, {
-      headers: { Authorization: `Bearer ${apiToken}` },
-    });
-    if (!res.ok) throw new Error(`Replicate poll error: ${res.status}`);
-
-    const data = await res.json();
-
-    if (data.status === "succeeded") {
-      // Flux output is typically an array with one URL
-      const output = Array.isArray(data.output) ? data.output[0] : data.output;
-      if (!output) throw new Error("Replicate returned empty output");
-      return output;
-    }
-    if (data.status === "failed" || data.status === "canceled") {
-      throw new Error(`Replicate prediction failed: ${data.error || "unknown"}`);
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, intervalMs));
-  }
-
-  throw new Error("Replicate prediction timed out");
-}
+import { GoogleGenAI } from "@google/genai";
 
 export async function generateSceneImage(prompt: string): Promise<string | null> {
-  const apiToken = process.env.REPLICATE_API_TOKEN;
-
-  if (!apiToken) {
-    console.log("No REPLICATE_API_TOKEN set — skipping scene image generation");
+  const project = process.env.GOOGLE_CLOUD_PROJECT;
+  if (!project) {
+    console.log("No GOOGLE_CLOUD_PROJECT set — skipping scene image generation");
     return null;
   }
 
   try {
-    // Use Flux Schnell for fast, high-quality image generation
-    const res = await fetch(`${REPLICATE_API_BASE}/predictions`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        version: "5599ed30703defd1d160a25a63321b4dec97101d98b4674bcc56e41f62f35637",
-        input: {
-          prompt,
-          num_outputs: 1,
-          aspect_ratio: "2:1", // Equirectangular panorama aspect ratio
-          output_format: "jpg",
-          output_quality: 90,
-        },
-      }),
+    const ai = new GoogleGenAI({
+      vertexai: true,
+      project,
+      location: process.env.GOOGLE_CLOUD_LOCATION || "us-central1",
     });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(`Replicate API error: ${res.status} ${JSON.stringify(err)}`);
+    const response = await ai.models.generateImages({
+      model: "imagen-3.0-generate-002",
+      prompt,
+      config: {
+        numberOfImages: 1,
+        aspectRatio: "16:9",
+      },
+    });
+
+    if (!response.generatedImages || response.generatedImages.length === 0) {
+      throw new Error("No images generated");
     }
 
-    const data = await res.json();
-    return await pollReplicatePrediction(data.id, apiToken);
+    const imageBytes = response.generatedImages[0].image?.imageBytes;
+    if (!imageBytes) throw new Error("No image bytes in response");
+
+    // Convert base64 to a data URL that Three.js can load
+    return `data:image/png;base64,${imageBytes}`;
   } catch (err) {
     console.error("Scene image generation failed:", err);
     return null;

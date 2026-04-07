@@ -1,8 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
 import { parseWorldConfig, type WorldConfig } from "@/lib/types";
 import { LETTER_INTERPRETATION_PROMPT } from "./prompts";
-
-const REPLICATE_API_BASE = "https://api.replicate.com/v1";
 
 interface LetterInput {
   letter: string;
@@ -10,60 +9,30 @@ interface LetterInput {
   artist: string;
 }
 
-async function interpretWithReplicate(input: LetterInput): Promise<WorldConfig> {
-  const apiToken = process.env.REPLICATE_API_TOKEN;
-  if (!apiToken) throw new Error("No REPLICATE_API_TOKEN");
+async function interpretWithGemini(input: LetterInput): Promise<WorldConfig> {
+  const ai = new GoogleGenAI({
+    vertexai: true,
+    project: process.env.GOOGLE_CLOUD_PROJECT,
+    location: process.env.GOOGLE_CLOUD_LOCATION || "us-central1",
+  });
 
   const userMessage = `Song: "${input.songTitle}" by ${input.artist}\n\nLetter:\n${input.letter}`;
 
-  // Use Replicate's serverless API with meta/llama model
-  const res = await fetch(`${REPLICATE_API_BASE}/models/meta/meta-llama-3-8b-instruct/predictions`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiToken}`,
-      "Content-Type": "application/json",
+  const response = await ai.models.generateContent({
+    model: "gemini-2.0-flash",
+    contents: userMessage,
+    config: {
+      systemInstruction: LETTER_INTERPRETATION_PROMPT,
+      temperature: 0.7,
+      maxOutputTokens: 4096,
     },
-    body: JSON.stringify({
-      input: {
-        prompt: userMessage,
-        system_prompt: LETTER_INTERPRETATION_PROMPT,
-        max_tokens: 4096,
-        temperature: 0.7,
-      },
-    }),
   });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(`Replicate LLM error: ${res.status} ${JSON.stringify(err)}`);
-  }
+  const text = response.text;
+  if (!text) throw new Error("Empty response from Gemini");
 
-  const prediction = await res.json();
-
-  // Poll for completion
-  let result = prediction;
-  while (result.status !== "succeeded" && result.status !== "failed") {
-    await new Promise((r) => setTimeout(r, 2000));
-    const pollRes = await fetch(`${REPLICATE_API_BASE}/predictions/${result.id}`, {
-      headers: { Authorization: `Bearer ${apiToken}` },
-    });
-    if (!pollRes.ok) throw new Error(`Replicate poll error: ${pollRes.status}`);
-    result = await pollRes.json();
-  }
-
-  if (result.status === "failed") {
-    throw new Error(`Replicate prediction failed: ${result.error || "unknown"}`);
-  }
-
-  // Output is an array of string tokens — join them
-  const text = Array.isArray(result.output) ? result.output.join("") : result.output;
-  if (!text) throw new Error("Empty response from Replicate LLM");
-
-  // Extract JSON from response
   const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error("No JSON found in Replicate LLM response");
-  }
+  if (!jsonMatch) throw new Error("No JSON found in Gemini response");
 
   return parseWorldConfig(jsonMatch[0]);
 }
@@ -105,7 +74,7 @@ function generateMockWorldConfig(input: LetterInput): WorldConfig {
 }
 
 export async function interpretLetter(input: LetterInput): Promise<WorldConfig> {
-  // Priority 1: Claude API (if real key exists)
+  // Priority 1: Claude API
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (apiKey && apiKey.startsWith("sk-ant-")) {
     console.log("Using Claude API for letter interpretation");
@@ -123,14 +92,13 @@ export async function interpretLetter(input: LetterInput): Promise<WorldConfig> 
     return parseWorldConfig(text.text);
   }
 
-  // Priority 2: Replicate LLM (remote, no local memory)
-  const replicateToken = process.env.REPLICATE_API_TOKEN;
-  if (replicateToken) {
-    console.log("Using Replicate LLM (remote) for letter interpretation");
+  // Priority 2: Gemini via Vertex AI (GCP free credits)
+  if (process.env.GOOGLE_CLOUD_PROJECT) {
+    console.log("Using Gemini (Vertex AI) for letter interpretation");
     try {
-      return await interpretWithReplicate(input);
+      return await interpretWithGemini(input);
     } catch (err) {
-      console.error("Replicate LLM failed, falling back to mock:", err);
+      console.error("Gemini interpretation failed:", err);
     }
   }
 
