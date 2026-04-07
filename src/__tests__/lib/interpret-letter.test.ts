@@ -71,7 +71,7 @@ vi.mock("@anthropic-ai/sdk", () => {
 
 describe("interpretLetter", () => {
   beforeEach(() => {
-    vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
+    vi.stubEnv("ANTHROPIC_API_KEY", "sk-ant-test-key-for-unit-tests");
   });
 
   it("converts a letter into a valid WorldConfig", async () => {
