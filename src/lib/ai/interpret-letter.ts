@@ -69,7 +69,7 @@ function generateMockWorldConfig(input: LetterInput): WorldConfig {
 export async function interpretLetter(input: LetterInput): Promise<WorldConfig> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
-  if (!apiKey || apiKey === "your-anthropic-api-key") {
+  if (!apiKey || !apiKey.startsWith("sk-ant-")) {
     console.log("No ANTHROPIC_API_KEY set — using mock world generation");
     return generateMockWorldConfig(input);
   }
