@@ -9,7 +9,7 @@ interface LetterInput {
 }
 
 const OLLAMA_BASE = "http://localhost:11434";
-const OLLAMA_MODEL = "gemma3:4b";
+const OLLAMA_MODEL = "gemma4:e4b";
 
 async function isOllamaRunning(): Promise<boolean> {
   try {
