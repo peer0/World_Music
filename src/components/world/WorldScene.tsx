@@ -23,35 +23,33 @@ export function WorldScene({
   config,
   skyboxUrl,
   sceneImageUrl,
-  depthMapUrl,
   progress,
   mode,
 }: WorldSceneProps) {
   const { world } = config;
-  const useDepthPanorama = !!sceneImageUrl;
+  const hasSceneImage = !!sceneImageUrl;
 
   return (
     <Canvas
-      camera={{ position: [0, 5, 10], fov: 70, near: 0.1, far: 200 }}
-      shadows
+      camera={{ position: [0, 0, 0.1], fov: 75, near: 0.1, far: 200 }}
       style={{ width: "100%", height: "100%" }}
     >
-      {useDepthPanorama ? (
-        // AI image-based world: panorama + depth displacement
-        <DepthPanorama
-          imageUrl={sceneImageUrl}
-          depthUrl={depthMapUrl ?? null}
-        />
+      {hasSceneImage ? (
+        // AI image-based world: full panorama as background
+        <>
+          <DepthPanorama imageUrl={sceneImageUrl} />
+          <Particles config={world.particles} palette={world.palette} />
+        </>
       ) : (
         // Fallback: procedural world (basic shapes)
         <>
           <Skybox url={skyboxUrl} fallbackColor={world.palette.primary} />
+          <Atmosphere atmosphere={world.atmosphere} palette={world.palette} />
           <Terrain terrain={world.terrain} palette={world.palette} />
           <WorldObjects objects={world.objects} palette={world.palette} />
+          <Particles config={world.particles} palette={world.palette} />
         </>
       )}
-      <Atmosphere atmosphere={world.atmosphere} palette={world.palette} />
-      <Particles config={world.particles} palette={world.palette} />
       <CameraController
         timeline={config.camera_timeline}
         progress={progress}

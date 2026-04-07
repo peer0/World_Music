@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { interpretLetter } from "@/lib/ai/interpret-letter";
 import { generateSkybox } from "@/lib/skybox/generate-skybox";
 import { generateSceneImage } from "@/lib/image/generate-scene";
-import { estimateDepth } from "@/lib/image/estimate-depth";
+// import { estimateDepth } from "@/lib/image/estimate-depth";
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,14 +23,12 @@ export async function POST(request: NextRequest) {
     // Step 2: Generate scene image (panorama) — primary visual
     const scenePrompt = worldConfig.scene_image?.panorama_prompt || worldConfig.skybox_prompt;
     let sceneImageUrl: string | null = null;
-    let depthMapUrl: string | null = null;
+    const depthMapUrl: string | null = null;
 
     sceneImageUrl = await generateSceneImage(scenePrompt);
 
-    // Step 3: If we got a scene image, estimate depth for parallax
-    if (sceneImageUrl) {
-      depthMapUrl = await estimateDepth(sceneImageUrl);
-    }
+    // Step 3: Depth map — skip for now (parallax works without it)
+    // TODO: Add GCP-based depth estimation later
 
     // Step 4: Fallback to skybox if no scene image
     let skyboxUrl: string | null = null;
