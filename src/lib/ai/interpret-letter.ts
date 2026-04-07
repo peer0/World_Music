@@ -19,7 +19,7 @@ async function interpretWithGemini(input: LetterInput): Promise<WorldConfig> {
   const userMessage = `Song: "${input.songTitle}" by ${input.artist}\n\nLetter:\n${input.letter}`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash-001",
+    model: "gemini-2.5-flash",
     contents: userMessage,
     config: {
       systemInstruction: LETTER_INTERPRETATION_PROMPT,
