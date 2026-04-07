@@ -78,6 +78,12 @@ function generateMockWorldConfig(input: LetterInput): WorldConfig {
         description: `"${input.songTitle}" by ${input.artist} — fallback world (Ollama not available)`,
       },
     },
+    scene_image: {
+      scene_description: `A dreamlike twilight landscape for "${input.songTitle}" by ${input.artist}. Gentle fog drifts over rolling hills under a gradient sky shifting from deep purple to warm amber.`,
+      style: "dreamlike",
+      panorama_prompt: "360 degree equirectangular panorama photograph, dreamlike twilight landscape, gentle fog drifting over rolling hills, gradient sky from deep purple to warm amber, scattered fireflies glowing softly, silhouettes of ancient trees on the horizon, ethereal and peaceful atmosphere, cinematic lighting",
+      depth_layers: ["distant purple mountains and gradient sky", "rolling hills with scattered trees", "misty foreground with glowing fireflies"],
+    },
     skybox_prompt: "360 equirectangular panorama, dusk sky, fog, ethereal atmosphere",
     camera_timeline: [
       { timestamp_pct: 0.0, position: { x: 0, y: 8, z: 25 }, look_at: { x: 0, y: 2, z: 0 }, transition: "smooth", description: "Opening" },

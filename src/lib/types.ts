@@ -52,6 +52,13 @@ export interface CameraKeyframe {
   description: string;
 }
 
+export interface SceneImageSpec {
+  scene_description: string;
+  style: "photorealistic" | "painterly" | "anime" | "dreamlike" | "watercolor";
+  panorama_prompt: string;
+  depth_layers: string[];
+}
+
 export interface WorldConfig {
   world: {
     terrain: TerrainConfig;
@@ -61,6 +68,7 @@ export interface WorldConfig {
     objects: WorldObject[];
     mood: MoodConfig;
   };
+  scene_image?: SceneImageSpec;
   skybox_prompt: string;
   camera_timeline: CameraKeyframe[];
 }
