@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { interpretLetter } from "@/lib/ai/interpret-letter";
 import { generateSkybox } from "@/lib/skybox/generate-skybox";
+import { generateSceneImage } from "@/lib/image/generate-scene";
+import { estimateDepth } from "@/lib/image/estimate-depth";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,15 +17,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Step 1: Interpret letter with AI
     const worldConfig = await interpretLetter({ letter, songTitle, artist });
 
-    let skyboxUrl: string | null = null;
-    try {
-      skyboxUrl = await generateSkybox(worldConfig.skybox_prompt);
-    } catch (err) {
-      console.error("Skybox generation failed, continuing without:", err);
+    // Step 2: Generate scene image (panorama) — primary visual
+    const scenePrompt = worldConfig.scene_image?.panorama_prompt || worldConfig.skybox_prompt;
+    let sceneImageUrl: string | null = null;
+    let depthMapUrl: string | null = null;
+
+    sceneImageUrl = await generateSceneImage(scenePrompt);
+
+    // Step 3: If we got a scene image, estimate depth for parallax
+    if (sceneImageUrl) {
+      depthMapUrl = await estimateDepth(sceneImageUrl);
     }
 
+    // Step 4: Fallback to skybox if no scene image
+    let skyboxUrl: string | null = null;
+    if (!sceneImageUrl) {
+      try {
+        skyboxUrl = await generateSkybox(worldConfig.skybox_prompt);
+      } catch (err) {
+        console.error("Skybox generation failed:", err);
+      }
+    }
+
+    // Step 5: Save to database
     const world = await prisma.world.create({
       data: {
         title: songTitle,
@@ -32,11 +51,19 @@ export async function POST(request: NextRequest) {
         letter,
         worldConfig: JSON.stringify(worldConfig),
         skyboxUrl,
+        sceneImageUrl,
+        depthMapUrl,
         userId,
       },
     });
 
-    return NextResponse.json({ id: world.id, worldConfig, skyboxUrl });
+    return NextResponse.json({
+      id: world.id,
+      worldConfig,
+      skyboxUrl,
+      sceneImageUrl,
+      depthMapUrl,
+    });
   } catch (err) {
     console.error("World generation failed:", err);
     return NextResponse.json({ error: "World generation failed" }, { status: 500 });

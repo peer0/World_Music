@@ -11,6 +11,7 @@ import type { PlayerState } from "@/hooks/useYouTubePlayer";
 interface WorldData {
   id: string; title: string; artist: string; youtubeUrl: string;
   letter: string; worldConfig: string; skyboxUrl: string | null;
+  sceneImageUrl: string | null; depthMapUrl: string | null;
 }
 
 export default function WorldPage() {
@@ -69,7 +70,14 @@ export default function WorldPage() {
   return (
     <div className="relative w-screen h-screen bg-black overflow-hidden">
       <div className="absolute inset-0">
-        <WorldScene config={config} skyboxUrl={world.skyboxUrl} progress={progress} mode={mode} />
+        <WorldScene
+          config={config}
+          skyboxUrl={world.skyboxUrl}
+          sceneImageUrl={world.sceneImageUrl}
+          depthMapUrl={world.depthMapUrl}
+          progress={progress}
+          mode={mode}
+        />
       </div>
       {showUI && (
         <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">

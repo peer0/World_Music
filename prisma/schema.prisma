@@ -22,8 +22,10 @@ model World {
   youtubeUrl   String
   letter       String
   worldConfig  String
-  skyboxUrl    String?
-  thumbnailUrl String?
+  skyboxUrl      String?
+  sceneImageUrl  String?
+  depthMapUrl    String?
+  thumbnailUrl   String?
   isPublic     Boolean  @default(true)
   userId       String
   user         User     @relation(fields: [userId], references: [id])
