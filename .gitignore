@@ -14,4 +14,5 @@ prisma/dev.db-journal
 .superpowers/
 .claude/
 .wolf/
+.github/
 CLAUDE.md
