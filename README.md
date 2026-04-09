@@ -20,6 +20,12 @@
 5. 노래가 끝나면 자유롭게 세계를 탐험합니다
 ```
 
+You can now choose a **World Model mode** during creation:
+
+- **Classic**: static world (no dynamic world model)
+- **Dynamic**: gradual emotional/environmental evolution over playback
+- **Generative**: stronger world-model dynamics and narrative motion
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -91,6 +97,43 @@ src/
 ```bash
 npm test          # Run all tests
 npm run test:watch  # Watch mode
+```
+
+## World Model (Phase 2-ready)
+
+This repo now includes a lightweight **world-model runtime layer** that lets a generated world evolve over song progress.
+
+- `WorldConfig.world_model` is optional (backward-compatible)
+- When enabled, the runtime interpolates emotional/environmental dynamics by playback progress:
+  - `fog_density`
+  - `wind_strength`
+  - `particle_density`
+  - `particle_speed`
+  - `mood_intensity`
+- Progression supports `linear` or `ease-in-out`
+- Existing worlds without `world_model` render exactly as before
+
+### Example `world_model`
+
+```json
+{
+  "world_model": {
+    "enabled": true,
+    "progression": "ease-in-out",
+    "dynamics": {
+      "fog_density": { "from": 0.2, "to": 0.6 },
+      "wind_strength": { "from": 0.1, "to": 0.3 },
+      "particle_density": { "from": 0.25, "to": 0.45 },
+      "particle_speed": { "from": 0.15, "to": 0.4 },
+      "mood_intensity": { "from": 0.5, "to": 0.85 }
+    },
+    "narrative_arc": [
+      "opening hush",
+      "rising memory",
+      "quiet release"
+    ]
+  }
+}
 ```
 
 ## License

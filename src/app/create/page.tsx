@@ -9,7 +9,13 @@ export default function CreatePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleSubmit(data: { letter: string; songTitle: string; artist: string; youtubeUrl: string }) {
+  async function handleSubmit(data: {
+    letter: string;
+    songTitle: string;
+    artist: string;
+    youtubeUrl: string;
+    worldModelMode: "classic" | "dynamic" | "generative";
+  }) {
     setIsLoading(true);
     setError("");
     try {

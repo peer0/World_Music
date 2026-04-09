@@ -59,6 +59,26 @@ export interface SceneImageSpec {
   depth_layers: string[];
 }
 
+export interface WorldModelRange {
+  from: number;
+  to: number;
+}
+
+export interface WorldModelDynamics {
+  fog_density?: WorldModelRange;
+  wind_strength?: WorldModelRange;
+  particle_density?: WorldModelRange;
+  particle_speed?: WorldModelRange;
+  mood_intensity?: WorldModelRange;
+}
+
+export interface WorldModelConfig {
+  enabled: boolean;
+  progression: "linear" | "ease-in-out";
+  dynamics: WorldModelDynamics;
+  narrative_arc: string[];
+}
+
 export interface WorldConfig {
   world: {
     terrain: TerrainConfig;
@@ -69,6 +89,7 @@ export interface WorldConfig {
     mood: MoodConfig;
   };
   scene_image?: SceneImageSpec;
+  world_model?: WorldModelConfig;
   skybox_prompt: string;
   camera_timeline: CameraKeyframe[];
 }

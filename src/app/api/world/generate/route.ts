@@ -8,7 +8,11 @@ import { generateSceneImage } from "@/lib/image/generate-scene";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { letter, songTitle, artist, youtubeUrl, userId } = body;
+    const { letter, songTitle, artist, youtubeUrl, userId, worldModelMode } = body;
+    const allowedModes = ["classic", "dynamic", "generative"] as const;
+    const isAllowedMode = (mode: unknown): mode is (typeof allowedModes)[number] =>
+      typeof mode === "string" && allowedModes.some((allowedMode) => allowedMode === mode);
+    const normalizedMode = isAllowedMode(worldModelMode) ? worldModelMode : "dynamic";
 
     if (!letter || !songTitle || !artist || !youtubeUrl || !userId) {
       return NextResponse.json(
@@ -18,7 +22,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 1: Interpret letter with AI
-    const worldConfig = await interpretLetter({ letter, songTitle, artist });
+    const worldConfig = await interpretLetter({
+      letter,
+      songTitle,
+      artist,
+      worldModelMode: normalizedMode,
+    });
 
     // Step 2: Generate scene image (panorama) — primary visual
     const scenePrompt = worldConfig.scene_image?.panorama_prompt || worldConfig.skybox_prompt;

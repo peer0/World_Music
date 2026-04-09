@@ -106,6 +106,11 @@ export default function WorldPage() {
               </button>
             </div>
             <p className="text-center text-xs text-gray-500 italic">{config.world.mood.description}</p>
+            {config.world_model?.enabled && config.world_model.narrative_arc.length > 0 && (
+              <p className="text-center text-[11px] text-purple-300/80">
+                World model arc: {config.world_model.narrative_arc.join(" → ")}
+              </p>
+            )}
           </div>
         </div>
       )}

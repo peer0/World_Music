@@ -49,6 +49,18 @@ OUTPUT FORMAT: Respond with ONLY valid JSON matching this structure (no markdown
     "panorama_prompt": "English prompt for 360 equirectangular panorama image generation. MUST start with '360 degree equirectangular panorama photograph'. Be extremely detailed: describe foreground objects, midground landscape, background/horizon, sky, lighting, color temperature, atmosphere, textures. This prompt directly controls what the viewer SEES as their entire world.",
     "depth_layers": ["description of distant background", "description of midground", "description of foreground"]
   },
+  "world_model": {
+    "enabled": true,
+    "progression": "linear" | "ease-in-out",
+    "dynamics": {
+      "fog_density": { "from": 0.0-1.0, "to": 0.0-1.0 },
+      "wind_strength": { "from": 0.0-1.0, "to": 0.0-1.0 },
+      "particle_density": { "from": 0.0-1.0, "to": 0.0-1.0 },
+      "particle_speed": { "from": 0.0-1.0, "to": 0.0-1.0 },
+      "mood_intensity": { "from": 0.0-1.0, "to": 0.0-1.0 }
+    },
+    "narrative_arc": ["opening emotional state", "midpoint shift", "ending resonance"]
+  },
   "skybox_prompt": "Same as panorama_prompt (kept for backwards compatibility)",
   "camera_timeline": [
     {
@@ -65,6 +77,8 @@ RULES:
 - scene_image.panorama_prompt is THE MOST IMPORTANT field. It determines what the viewer actually sees. Make it extremely vivid and detailed (50+ words). Describe the FULL 360-degree environment.
 - scene_image.style should match the emotional tone: "dreamlike" for abstract feelings, "painterly" for nostalgic/warm, "photorealistic" for grounded emotions, "watercolor" for gentle/flowing, "anime" for vibrant/expressive
 - scene_image.depth_layers should have exactly 3 entries: [far background, midground, foreground]
+- world_model is optional but recommended. If included, dynamics values must stay in 0.0-1.0 ranges
+- world_model.narrative_arc should have 3 short phrases that match beginning/middle/end emotional motion
 - camera_timeline must have at least 4 keyframes at timestamp_pct: 0.0, ~0.25, ~0.5, 1.0
 - First keyframe should be a distant establishing shot (high y, far z)
 - Middle keyframes should bring the viewer into the world
