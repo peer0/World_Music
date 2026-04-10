@@ -32,8 +32,9 @@ You can now choose a **World Model mode** during creation:
 |-------|-----------|
 | Framework | Next.js 15 (App Router) |
 | 3D | Three.js + React Three Fiber |
-| AI (Letter → World) | Claude API (Anthropic) |
-| AI (Skybox) | Blockade Labs Skybox AI |
+| AI (Letter → World) | Claude API (Anthropic) or Ollama (Qwen2.5) |
+| AI (Scene Image) | Hugging Face Inference (FLUX.1-schnell by default) |
+| AI (Skybox fallback) | Blockade Labs Skybox AI |
 | Music | YouTube IFrame API |
 | Database | SQLite + Prisma |
 | Styling | Tailwind CSS |
@@ -65,8 +66,12 @@ Open [http://localhost:3000](http://localhost:3000).
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_URL` | SQLite database path (default: `file:./dev.db`) |
-| `ANTHROPIC_API_KEY` | Anthropic API key for Claude |
-| `BLOCKADE_LABS_API_KEY` | Blockade Labs API key for skybox generation |
+| `ANTHROPIC_API_KEY` | Anthropic API key for Claude (optional) |
+| `OLLAMA_BASE_URL` | Ollama server URL (default: `http://127.0.0.1:11434`) |
+| `OLLAMA_MODEL` | Ollama model for letter interpretation (default: `qwen2.5:14b`) |
+| `HUGGINGFACE_API_KEY` | Hugging Face token for scene image generation |
+| `HUGGINGFACE_IMAGE_MODEL` | HF image model (default: `black-forest-labs/FLUX.1-schnell`) |
+| `BLOCKADE_LABS_API_KEY` | Blockade Labs key for skybox fallback (optional) |
 
 ## Project Structure
 

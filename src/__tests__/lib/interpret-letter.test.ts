@@ -84,6 +84,8 @@ vi.mock("@anthropic-ai/sdk", () => {
 describe("interpretLetter", () => {
   beforeEach(() => {
     vi.stubEnv("ANTHROPIC_API_KEY", "sk-ant-test-key-for-unit-tests");
+    vi.stubEnv("OLLAMA_MODEL", "");
+    vi.stubEnv("OLLAMA_BASE_URL", "");
   });
 
   it("converts a letter into a valid WorldConfig", async () => {

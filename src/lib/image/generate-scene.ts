@@ -1,37 +1,57 @@
-import { GoogleGenAI } from "@google/genai";
+import { Buffer } from "node:buffer";
+
+interface HuggingFaceErrorResponse {
+  error?: string;
+}
 
 export async function generateSceneImage(prompt: string): Promise<string | null> {
-  const project = process.env.GOOGLE_CLOUD_PROJECT;
-  if (!project) {
-    console.log("No GOOGLE_CLOUD_PROJECT set — skipping scene image generation");
+  const apiKey = process.env.HUGGINGFACE_API_KEY;
+  if (!apiKey) {
+    console.log("No HUGGINGFACE_API_KEY set — skipping scene image generation");
     return null;
   }
 
+  const model = process.env.HUGGINGFACE_IMAGE_MODEL || "black-forest-labs/FLUX.1-schnell";
+
   try {
-    const ai = new GoogleGenAI({
-      vertexai: true,
-      project,
-      location: process.env.GOOGLE_CLOUD_LOCATION || "us-central1",
-    });
-
-    const response = await ai.models.generateImages({
-      model: "imagen-3.0-generate-002",
-      prompt,
-      config: {
-        numberOfImages: 1,
-        aspectRatio: "16:9",
+    const response = await fetch(`https://api-inference.huggingface.co/models/${encodeURIComponent(model)}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        inputs: prompt,
+        parameters: {
+          num_inference_steps: 4,
+          guidance_scale: 0,
+        },
+        options: {
+          wait_for_model: true,
+          use_cache: false,
+        },
+      }),
     });
 
-    if (!response.generatedImages || response.generatedImages.length === 0) {
-      throw new Error("No images generated");
+    const contentType = response.headers.get("content-type") || "";
+
+    if (!response.ok) {
+      if (contentType.includes("application/json")) {
+        const data = (await response.json()) as HuggingFaceErrorResponse;
+        throw new Error(`Hugging Face API error: ${data.error || response.status}`);
+      }
+
+      throw new Error(`Hugging Face API error: ${response.status}`);
     }
 
-    const imageBytes = response.generatedImages[0].image?.imageBytes;
-    if (!imageBytes) throw new Error("No image bytes in response");
+    if (!contentType.startsWith("image/")) {
+      throw new Error(`Unexpected Hugging Face response type: ${contentType || "unknown"}`);
+    }
 
-    // Convert base64 to a data URL that Three.js can load
-    return `data:image/png;base64,${imageBytes}`;
+    const imageBytes = await response.arrayBuffer();
+    const base64 = Buffer.from(imageBytes).toString("base64");
+
+    return `data:${contentType};base64,${base64}`;
   } catch (err) {
     console.error("Scene image generation failed:", err);
     return null;

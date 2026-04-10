@@ -1,5 +1,4 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { GoogleGenAI } from "@google/genai";
 import { parseWorldConfig, type WorldConfig } from "@/lib/types";
 import { strengthenRange } from "@/lib/world-model/strengthen-dynamics";
 import { LETTER_INTERPRETATION_PROMPT } from "./prompts";
@@ -9,6 +8,11 @@ interface LetterInput {
   songTitle: string;
   artist: string;
   worldModelMode?: "classic" | "dynamic" | "generative";
+}
+
+interface OllamaGenerateResponse {
+  response?: string;
+  error?: string;
 }
 
 function applyWorldModelMode(
@@ -50,37 +54,53 @@ function applyWorldModelMode(
   return config;
 }
 
-async function interpretWithGemini(input: LetterInput): Promise<WorldConfig> {
-  const ai = new GoogleGenAI({
-    vertexai: true,
-    project: process.env.GOOGLE_CLOUD_PROJECT,
-    location: process.env.GOOGLE_CLOUD_LOCATION || "us-central1",
-  });
-
+async function interpretWithOllama(input: LetterInput): Promise<WorldConfig> {
+  const baseUrl = (process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434").replace(/\/$/, "");
+  const model = process.env.OLLAMA_MODEL || "qwen2.5:14b";
   const modeInstruction = input.worldModelMode
     ? `\n\nWorld model mode: ${input.worldModelMode}. If mode is classic, omit world_model. If dynamic or generative, include world_model with stronger dynamics for generative.`
     : "";
 
   const userMessage = `Song: "${input.songTitle}" by ${input.artist}\n\nLetter:\n${input.letter}${modeInstruction}`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
+  try {
+    const response = await fetch(`${baseUrl}/api/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model,
+        system: LETTER_INTERPRETATION_PROMPT,
+        prompt: userMessage,
+        format: "json",
+        stream: false,
+        options: {
+          temperature: 0.7,
+        },
+      }),
+    });
 
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: userMessage,
-    config: {
-      systemInstruction: LETTER_INTERPRETATION_PROMPT,
-      temperature: 0.7,
-      maxOutputTokens: 4096,
-    },
-  });
+    if (!response.ok) {
+      throw new Error(`Ollama API error: ${response.status}`);
+    }
 
-  const text = response.text;
-  if (!text) throw new Error("Empty response from Gemini");
+    const payload = (await response.json()) as OllamaGenerateResponse;
+    if (payload.error) {
+      throw new Error(payload.error);
+    }
 
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error("No JSON found in Gemini response");
+    const text = payload.response;
+    if (!text) throw new Error("Empty response from Ollama");
+
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No JSON found in Ollama response");
 
     const parsed = parseWorldConfig(jsonMatch[0]);
     return applyWorldModelMode(parsed, input.worldModelMode);
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function generateMockWorldConfig(input: LetterInput): WorldConfig {
@@ -136,7 +156,17 @@ function generateMockWorldConfig(input: LetterInput): WorldConfig {
 }
 
 export async function interpretLetter(input: LetterInput): Promise<WorldConfig> {
-  // Priority 1: Claude API
+  // Priority 1: Open-source local LLM (Ollama)
+  if (process.env.OLLAMA_MODEL || process.env.OLLAMA_BASE_URL) {
+    console.log("Using Ollama for letter interpretation");
+    try {
+      return await interpretWithOllama(input);
+    } catch (err) {
+      console.error("Ollama interpretation failed:", err);
+    }
+  }
+
+  // Priority 2: Claude API
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (apiKey && apiKey.startsWith("sk-ant-")) {
     console.log("Using Claude API for letter interpretation");
@@ -159,16 +189,6 @@ export async function interpretLetter(input: LetterInput): Promise<WorldConfig> 
     if (text.type !== "text") throw new Error("Unexpected response type from Claude");
     const parsed = parseWorldConfig(text.text);
     return applyWorldModelMode(parsed, input.worldModelMode);
-  }
-
-  // Priority 2: Gemini via Vertex AI (GCP free credits)
-  if (process.env.GOOGLE_CLOUD_PROJECT) {
-    console.log("Using Gemini (Vertex AI) for letter interpretation");
-    try {
-      return await interpretWithGemini(input);
-    } catch (err) {
-      console.error("Gemini interpretation failed:", err);
-    }
   }
 
   // Priority 3: Mock fallback
